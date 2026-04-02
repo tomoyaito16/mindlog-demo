@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindMirror - 書かなくても、自分がわかる</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Maru Gothic Pro', 'BIZ UDGothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background: #faf8f5;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Header */
+        .header {
+            padding: 60px 24px 20px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+
+        .tagline {
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* Streak Badge */
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .question-text {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .question-sub {
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* Emoji Selector */
+        .emoji-selector {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 8px;
+            margin: 20px 0;
+        }
+
+        .emoji-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            background: white;
+            font-size: 32px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .emoji-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .emoji-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e0e5ff 0%, #f0e5ff 100%);
+            transform: scale(1.2);
+        }
+
+        /* Text Input */
+        .text-input-wrapper {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .text-input-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .text-input {
+            width: 100%;
+            border: none;
+            font-size: 16px;
+            padding: 8px 0;
+            outline: none;
+            font-family: inherit;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: auto;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* AI Feedback Screen */
+        .ai-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .ai-message {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            margin: 0 24px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        .ai-message::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid white;
+        }
+
+        .ai-message-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+            text-align: center;
+        }
+
+        .ai-followup {
+            font-size: 15px;
+            color: #667eea;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        /* Quick Reply */
+        .quick-reply-section {
+            padding: 0 24px;
+        }
+
+        .quick-reply-label {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .quick-reply-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quick-reply-btn:hover {
+            border-color: #667eea;
+            background: #f5f3ff;
+        }
+
+        .quick-reply-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #e0e5ff 0%, #f0e5ff 100%);
+        }
+
+        .more-link {
+            display: block;
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+            margin-top: 20px;
+            text-decoration: none;
+        }
+
+        /* Weekly Summary Screen */
+        .summary-header {
+            padding: 60px 24px 20px;
+            text-align: center;
+        }
+
+        .summary-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .summary-date {
+            font-size: 14px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .summary-content {
+            flex: 1;
+            padding: 0 24px;
+            overflow-y: auto;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .summary-card-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Emotion Chart */
+        .emotion-chart {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 100px;
+            padding: 10px 0;
+        }
+
+        .chart-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bar {
+            width: 32px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            transition: height 0.5s ease;
+        }
+
+        .chart-day {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .chart-emoji {
+            font-size: 16px;
+        }
+
+        /* Insight Card */
+        .insight-item {
+            background: linear-gradient(135deg, #f0f5ff 0%, #fff0f5 100%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .insight-highlight {
+            font-size: 15px;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .insight-detail {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .insight-tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
+        /* Suggestion */
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .suggestion-text {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 16px 24px 32px;
+            background: white;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s ease;
+        }
+
+        .nav-item.active {
+            opacity: 1;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            color: #333;
+        }
+
+        /* Screen Navigation Buttons */
+        .screen-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .screen-nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background: white;
+            color: #667eea;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .screen-nav-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .screen-nav-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Success Animation */
+        .success-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(102, 126, 234, 0.95);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 50;
+        }
+
+        .success-overlay.show {
+            display: flex;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+        }
+
+        .success-text {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <!-- Screen 1: Daily Check-in -->
+        <div class="screen active" id="screen-checkin">
+            <div class="header">
+                <div class="logo">MindMirror</div>
+                <div class="tagline">書かなくても、自分がわかる</div>
+                <div class="streak-badge">
+                    🔥 7日連続記録中！
+                </div>
+            </div>
+            
+            <div class="main-content">
+                <div class="question-card fade-in">
+                    <div class="question-text">今日はどんな1日だった？</div>
+                    <div class="question-sub">直感で選んでください</div>
+                </div>
+                
+                <div class="emoji-selector">
+                    <button class="emoji-btn" data-value="1">😢</button>
+                    <button class="emoji-btn" data-value="2">😐</button>
+                    <button class="emoji-btn" data-value="3">🙂</button>
+                    <button class="emoji-btn" data-value="4">😊</button>
+                    <button class="emoji-btn" data-value="5">😄</button>
+                </div>
+                
+                <div class="text-input-wrapper">
+                    <div class="text-input-label">または一言で...</div>
+                    <input type="text" class="text-input" placeholder="今日あったことを一言で">
+                </div>
+                
+                <button class="submit-btn" id="submit-btn" disabled>記録する ✨</button>
+            </div>
+            
+            <div class="bottom-nav">
+                <div class="nav-item active">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">今日</span>
+                </div>
+                <div class="nav-item" onclick="showScreen('screen-summary')">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">サマリー</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">設定</span>
+                </div>
+            </div>
+            
+            <!-- Success Overlay -->
+            <div class="success-overlay" id="success-overlay">
+                <div class="success-icon">✅</div>
+                <div class="success-text">記録完了！</div>
+            </div>
+        </div>
+        
+        <!-- Screen 2: AI Feedback -->
+        <div class="screen" id="screen-feedback">
+            <div class="header">
+                <div class="logo">MindMirror</div>
+                <div class="tagline">AIからのメッセージ</div>
+            </div>
+            
+            <div class="main-content">
+                <div class="ai-avatar pulse">🤖</div>
+                
+                <div class="ai-message fade-in">
+                    <div class="ai-message-text">
+                        最近、ちょっと疲れ気味かな？<br>
+                        昨日より少しテンション下がってるね。
+                    </div>
+                    <div class="ai-followup">
+                        何か変わったことはあった？
+                    </div>
+                </div>
+                
+                <div class="quick-reply-section">
+                    <div class="quick-reply-label">クイック返答</div>
+                    <div class="quick-replies">
+                        <button class="quick-reply-btn">😴 睡眠不足</button>
+                        <button class="quick-reply-btn">💪 運動してない</button>
+                        <button class="quick-reply-btn">🎯 やることが多い</button>
+                        <button class="quick-reply-btn">👍 いつも通り</button>
+                        <button class="quick-reply-btn">☀️ 天気のせいかも</button>
+                        <button class="quick-reply-btn">💭 なんとなく</button>
+                    </div>
+                    <a href="#" class="more-link">もっと詳しく話す →</a>
+                </div>
+                
+                <button class="submit-btn" onclick="showScreen('screen-summary')">
+                    完了 👍
+                </button>
+            </div>
+            
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-checkin')">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">今日</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">サマリー</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">設定</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Screen 3: Weekly Summary -->
+        <div class="screen" id="screen-summary">
+            <div class="summary-header">
+                <div class="summary-title">📊 今週のあなた</div>
+                <div class="summary-date">2025年1月6日 〜 1月12日</div>
+            </div>
+            
+            <div class="summary-content">
+                <div class="summary-card">
+                    <div class="summary-card-title">📈 感情の推移</div>
+                    <div class="emotion-chart">
+                        <div class="chart-bar">
+                            <span class="chart-emoji">😐</span>
+                            <div class="bar" style="height: 40px;"></div>
+                            <span class="chart-day">月</span>
+                        </div>
+                        <div class="chart-bar">
+                            <span class="chart-emoji">😢</span>
+                            <div class="bar" style="height: 20px;"></div>
+                            <span class="chart-day">火</span>
+                        </div>
+                        <div class="chart-bar">
+                            <span class="chart-emoji">🙂</span>
+                            <div class="bar" style="height: 60px;"></div>
+                            <span class="chart-day">水</span>
+                        </div>
+                        <div class="chart-bar">
+                            <span class="chart-emoji">😊</span>
+                            <div class="bar" style="height: 80px;"></div>
+                            <span class="chart-day">木</span>
+                        </div>
+                        <div class="chart-bar">
+                            <span class="chart-emoji">😊</span>
+                            <div class="bar" style="height: 75px;"></div>
+                            <span class="chart-day">金</span>
+                        </div>
+                        <div class="chart-bar">
+                            <span class="chart-emoji">😄</span>
+                            <div class="bar" style="height: 95px;"></div>
+                            <span class="chart-day">土</span>
+                        </div>
+                        <div class="chart-bar">
+                            <span class="chart-emoji">😐</span>
+                            <div class="bar" style="height: 45px;"></div>
+                            <span class="chart-day">日</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-card-title">💡 今週の発見</div>
+                    <div class="insight-item">
+                        <div class="insight-highlight">🏃 運動した日は気分が +25% UP！</div>
+                        <div class="insight-detail">木・金・土に運動した記録があり、いずれも高スコアでした</div>
+                        <span class="insight-tag">運動 × 気分</span>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-highlight">😴 火曜の落ち込みは睡眠不足？</div>
+                        <div class="insight-detail">前日の睡眠時間が5時間以下だったようです</div>
+                        <span class="insight-tag">睡眠 × 疲労</span>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-card-title">🎯 来週への提案</div>
+                    <div class="suggestion-item">
+                        <div class="suggestion-icon">🏃</div>
+                        <div class="suggestion-text">週3回の運動を続けてみよう！効果が出ています</div>
+                    </div>
+                    <div class="suggestion-item">
+                        <div class="suggestion-icon">😴</div>
+                        <div class="suggestion-text">平日の就寝を30分早めてみては？</div>
+                    </div>
+                    <div class="suggestion-item">
+                        <div class="suggestion-icon">📅</div>
+                        <div class="suggestion-text">日曜の夜にリラックス時間を確保しよう</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bottom-nav">
+                <div class="nav-item" onclick="showScreen('screen-checkin')">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">今日</span>
+                </div>
+                <div class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">サマリー</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">設定</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Screen Navigation -->
+    <div class="screen-nav">
+        <button class="screen-nav-btn active" onclick="showScreen('screen-checkin')">① 記録</button>
+        <button class="screen-nav-btn" onclick="showScreen('screen-feedback')">② AI応答</button>
+        <button class="screen-nav-btn" onclick="showScreen('screen-summary')">③ サマリー</button>
+    </div>
+
+    <script>
+        // Emoji Selection
+        const emojiBtns = document.querySelectorAll('.emoji-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const textInput = document.querySelector('.text-input');
+        
+        emojiBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                emojiBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                submitBtn.disabled = false;
+            });
+        });
+        
+        textInput.addEventListener('input', () => {
+            if (textInput.value.length > 0) {
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // Submit Action
+        submitBtn.addEventListener('click', () => {
+            const successOverlay = document.getElementById('success-overlay');
+            successOverlay.classList.add('show');
+            
+            setTimeout(() => {
+                successOverlay.classList.remove('show');
+                showScreen('screen-feedback');
+            }, 1500);
+        });
+        
+        // Quick Reply Selection
+        const quickReplyBtns = document.querySelectorAll('.quick-reply-btn');
+        quickReplyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('selected');
+            });
+        });
+        
+        // Screen Navigation
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            document.querySelectorAll('.screen-nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const btnIndex = {
+                'screen-checkin': 0,
+                'screen-feedback': 1,
+                'screen-summary': 2
+            };
+            document.querySelectorAll('.screen-nav-btn')[btnIndex[screenId]].classList.add('active');
+            
+            // Update bottom nav
+            const navItems = document.querySelectorAll(`#${screenId} .nav-item`);
+            navItems.forEach(item => item.classList.remove('active'));
+            if (screenId === 'screen-checkin' || screenId === 'screen-feedback') {
+                navItems[0]?.classList.add('active');
+            } else {
+                navItems[1]?.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
